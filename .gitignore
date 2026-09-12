@@ -1,0 +1,11 @@
+.venv
+data/*
+!/data/.gitkeep
+__pycache__
+*.cache.sqlite
+.env
+influx_queue.txt
+
+# One-off scripts/output kept local-only until no longer needed
+fix_forecast_timestamps.py
+timestamp_fix_backup.json
