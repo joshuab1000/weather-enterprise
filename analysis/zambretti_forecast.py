@@ -13,6 +13,7 @@ from config import (
     DATABASE_PORT,
     TIMEZONE,
 )
+from csv_backup import write_csv
 from influxdb import InfluxDBClient
 
 
@@ -83,6 +84,31 @@ def save_forecast_to_db(
     Returns:
         True on success, False if the write to InfluxDB failed.
     """
+    timestamp_with_offset = timestamp.tz_localize(TIMEZONE).isoformat()
+    wind_direction = float(wind_dir_degrees) if wind_dir_degrees is not None else 0.0
+
+    write_csv(
+        "zambretti_forecast.csv",
+        [
+            "Timestamp",
+            "current_pressure",
+            "pressure_trend",
+            "wind_direction",
+            "month",
+            "forecast_code",
+            "forecast_text",
+        ],
+        [
+            timestamp_with_offset,
+            float(current_pressure),
+            float(pressure_trend),
+            wind_direction,
+            int(month),
+            str(code),
+            str(text),
+        ],
+    )
+
     try:
         client = InfluxDBClient(
             host=DATABASE_HOST, port=DATABASE_PORT, database=DATABASE_NAME
@@ -91,13 +117,11 @@ def save_forecast_to_db(
             {
                 "measurement": "zambretti_forecast",
                 "tags": {"device": ANALYSIS_DEVICE},
-                "time": timestamp.tz_localize(TIMEZONE).isoformat(),
+                "time": timestamp_with_offset,
                 "fields": {
                     "current_pressure": float(current_pressure),
                     "pressure_trend": float(pressure_trend),
-                    "wind_direction": float(wind_dir_degrees)
-                    if wind_dir_degrees is not None
-                    else 0.0,
+                    "wind_direction": wind_direction,
                     "month": int(month),
                     "forecast_code": str(code),
                     "forecast_text": str(text),

@@ -14,7 +14,18 @@ from config import (
     SENSOR_ELEVATION_M,
     TIMEZONE,
 )
+from csv_backup import write_csv
 from influxdb import InfluxDBClient
+
+TREND_FIELD_KEYS = [
+    "trend_30m",
+    "trend_1h",
+    "trend_2h",
+    "trend_3h",
+    "trend_6h",
+    "trend_12h",
+    "trend_24h",
+]
 
 
 def convert_to_sea_level_pressure(
@@ -347,6 +358,14 @@ def save_trends_to_db(
             trend_fields[data["field_key"]] = float(data["difference"])
 
     if trend_fields:
+        timestamp_with_offset = latest_timestamp.tz_localize(TIMEZONE).isoformat()
+
+        write_csv(
+            "pressure_trends.csv",
+            ["Timestamp"] + TREND_FIELD_KEYS,
+            [timestamp_with_offset] + [trend_fields.get(key, "") for key in TREND_FIELD_KEYS],
+        )
+
         try:
             client = InfluxDBClient(
                 host=DATABASE_HOST, port=DATABASE_PORT, database=DATABASE_NAME
@@ -355,7 +374,7 @@ def save_trends_to_db(
                 {
                     "measurement": "pressure_trends",
                     "tags": {"device": ANALYSIS_DEVICE},
-                    "time": latest_timestamp.tz_localize(TIMEZONE).isoformat(),
+                    "time": timestamp_with_offset,
                     "fields": trend_fields,
                 }
             ]
