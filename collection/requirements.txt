@@ -1,7 +1,8 @@
-bme280
+RPi.bme280
 smbus2
 requests
 openmeteo-requests
 requests_cache
 retry_requests
 python-dotenv
+numpy
